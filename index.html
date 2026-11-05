@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="モーターの電圧・電流・仕様から回転数やトルクを試算するツール">
+  <title>モーター性能計算ツール</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>モーター性能計算ツール</h1>
+      <p>モーターの仕様と使用条件から、回転数・トルク・電力などを試算します。</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="columns">
+      <section>
+        <section class="card">
+          <h2>1. モーターの選択</h2>
+          <div class="grid">
+            <div class="field">
+              <label for="motorType">モーターの種類</label>
+              <select id="motorType">
+                <option value="dc">DCモーター</option>
+                <option value="ac">ACモーター</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+            <div class="field" id="dcKindWrap">
+              <label for="dcKind">DCモーターの方式</label>
+              <select id="dcKind">
+                <option value="brushed">ブラシ付き</option>
+                <option value="bldc">ブラシレス（BLDC）</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="profile">モーター仕様の種類</label>
+              <select id="profile">
+                <option value="general">一般的なモーター（仕様を入力）</option>
+                <option value="kp104">工進 KP-104 ポンプ用</option>
+                <option value="custom">独自仕様・詳細入力</option>
+              </select>
+            </div>
+          </div>
+          <div id="profileNote" class="notice">一般的なDCモーターを想定した入力欄です。確認できた仕様を入力してください。</div>
+          <div id="unsupported" class="status warning hidden">この方式の専用計算モデルは未実装です。第1版ではブラシ付きDCモーターの計算に対応しています。</div>
+        </section>
+
+        <section class="card">
+          <h2>2. モーター仕様</h2>
+          <p class="sub">メーカー資料などで確認できた値を入力してください。空欄は自動補完しません。</p>
+          <div class="grid">
+            <div class="field">
+              <label for="ratedV">定格電圧 <span>(V)</span></label>
+              <input id="ratedV" type="number" min="0" step="any" placeholder="未入力">
+            </div>
+            <div class="field">
+              <label for="resistance">巻線抵抗 R <span>(Ω)</span></label>
+              <input id="resistance" type="number" min="0" step="any" placeholder="未入力">
+            </div>
+            <div class="field">
+              <label for="kt">トルク定数 Kt <span>(N·m/A)</span></label>
+              <input id="kt" type="number" min="0" step="any" placeholder="未入力">
+            </div>
+            <div class="field">
+              <label for="ke">逆起電力定数 Ke <span>(V/(rad/s))</span></label>
+              <input id="ke" type="number" min="0" step="any" placeholder="未入力">
+            </div>
+            <div class="field">
+              <label for="noLoad">無負荷電流 I₀ <span>(A)</span></label>
+              <input id="noLoad" type="number" min="0" step="any" placeholder="未入力">
+            </div>
+            <div class="field">
+              <label for="ratedI">定格電流 <span>(A・参考)</span></label>
+              <input id="ratedI" type="number" min="0" step="any" placeholder="未入力">
+            </div>
+          </div>
+          <div class="notice">Kt・Ke・抵抗などが不明な場合、回転数やトルクを正確に算出できません。定格電圧・定格電流だけから推測して補完することはありません。</div>
+        </section>
+
+        <section class="card">
+          <h2>3. 使用条件</h2>
+          <div class="grid">
+            <div class="field">
+              <label for="voltage">実際に加える電圧 (V)</label>
+              <input id="voltage" type="number" min="0" step="any" placeholder="入力してください">
+            </div>
+            <div class="field">
+              <label for="mode">電流の指定方法</label>
+              <select id="mode">
+                <option value="actual">A：実際の電流を入力</option>
+                <option value="limit">B：電流上限を指定</option>
+              </select>
+            </div>
+            <div class="field" id="actualWrap">
+              <label for="current">実際の電流 (A)</label>
+              <input id="current" type="number" min="0" step="any" placeholder="入力してください">
+            </div>
+            <div class="field hidden" id="limitWrap">
+              <label for="currentLimit">電流上限 (A)</label>
+              <input id="currentLimit" type="number" min="0" step="any" placeholder="入力してください">
+            </div>
+            <div class="field full hidden" id="loadWrap">
+              <label for="loadTorque">負荷トルク (N·m)</label>
+              <input id="loadTorque" type="number" min="0" step="any" placeholder="入力してください">
+            </div>
+          </div>
+          <p class="hint" id="modeHint">実測したモーター電流から、回転数と発生トルクを計算します。</p>
+          <div class="actions">
+            <button id="calculate">計算する</button>
+            <button class="secondary" id="reset" type="button">入力をクリア</button>
+          </div>
+          <div id="message" class="status" role="status">必要な値を入力して「計算する」を押してください。</div>
+        </section>
+      </section>
+
+      <section>
+        <section class="card">
+          <h2>4. モーター計算結果</h2>
+          <div class="results">
+            <div class="metric"><small>回転数</small><strong id="rpm">—</strong><span>RPM</span></div>
+            <div class="metric"><small>トルク</small><strong id="torque">—</strong><span>N·m</span></div>
+            <div class="metric"><small>電流</small><strong id="outCurrent">—</strong><span>A</span></div>
+            <div class="metric"><small>機械出力</small><strong id="mechanical">—</strong><span>W</span></div>
+            <div class="metric"><small>電気入力</small><strong id="electrical">—</strong><span>W</span></div>
+            <div class="metric"><small>効率（概算）</small><strong id="efficiency">—</strong><span>%</span></div>
+          </div>
+          <div id="resultNote" class="status">計算結果はここに表示されます。</div>
+          <h3>計算点の表示</h3>
+          <canvas id="chart" width="700" height="230" aria-label="回転数とトルクの参考表示"></canvas>
+          <p class="hint">第1版では計算点のみを表示します。モーター全域の性能曲線ではありません。</p>
+        </section>
+
+        <section class="card">
+          <h2>5. ギヤ比計算</h2>
+          <p class="sub">基本計算結果をもとに、減速後の出力軸を計算します。</p>
+          <div class="grid">
+            <div class="field">
+              <label for="ratio">減速比（例：5）</label>
+              <input id="ratio" type="number" min="0.0001" step="any" placeholder="入力してください">
+            </div>
+            <div class="field">
+              <label for="gearEff">ギヤ効率 (%)</label>
+              <input id="gearEff" type="number" min="0" max="100" step="any" value="90">
+            </div>
+          </div>
+          <div class="results gear-results">
+            <div class="metric"><small>出力軸回転数</small><strong id="gearRpm">—</strong><span>RPM</span></div>
+            <div class="metric"><small>出力軸トルク</small><strong id="gearTorque">—</strong><span>N·m</span></div>
+            <div class="metric"><small>出力軸出力</small><strong id="gearPower">—</strong><span>W</span></div>
+          </div>
+          <div id="gearMessage" class="status">モーターの計算後、減速比を入力してください。</div>
+        </section>
+
+        <section class="card">
+          <h2>計算モデル・注意事項</h2>
+          <p class="hint">ブラシ付き永久磁石DCモーターの定常状態を簡略化して計算します。</p>
+          <ul class="hint">
+            <li>トルク：T = Kt × (I − I₀)</li>
+            <li>角速度：ω = (V − IR) ÷ Ke</li>
+            <li>回転数：RPM = ω × 60 ÷ 2π</li>
+            <li>機械出力：Pout = T × ω</li>
+            <li>電気入力：Pin = V × I</li>
+            <li>効率：η = Pout ÷ Pin × 100</li>
+          </ul>
+          <p class="hint">簡易推定モデルです。温度上昇、磁気飽和、ブラシ損失、駆動回路損失、負荷変動などは十分に反映しません。実機の設計にはメーカー資料と実測値を使用してください。</p>
+        </section>
+      </section>
+    </div>
+    <footer>Motor Performance Calculator · Prototype 1.0</footer>
+  </main>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
